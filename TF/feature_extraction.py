@@ -7,9 +7,6 @@ from tensorflow.python.platform import gfile
 import numpy as np
 import cv2
 import sklearn
-from sklearn import cross_validation
-from sklearn.metrics import accuracy_score
-from sklearn.svm import SVC, LinearSVC
 import pickle
 
 ap = argparse.ArgumentParser()
@@ -52,7 +49,7 @@ def extract_features(list_images):
 			image_data = gfile.FastGFile(image, 'rb').read()
 			predictions = sess.run(next_to_last_tensor,{'DecodeJpeg/contents:0': image_data})
 			features[ind,:] = np.squeeze(predictions)
-			labels.append(re.split('_\d+',image.split('/')[1])[0])
+			labels.append(re.split('_\d+',image.split(os.sep)[1])[0])
 
 	return features, labels
 
@@ -60,19 +57,10 @@ create_tmp_images()
 list_images = [images_dir+f for f in os.listdir(images_dir) if re.search('jpg|JPG', f)]
 	
 features,labels = extract_features(list_images)
-#pickle.dump(features, open('features', 'wb'))
-#pickle.dump(labels, open('labels', 'wb'))
-
-#features = pickle.load(open('features'))
-#labels = pickle.load(open('labels'))
-
-X_train, X_test, y_train, y_test = cross_validation.train_test_split(features, labels, test_size=0.2, random_state=42)
-
-clf = LinearSVC(C=1.0, loss='squared_hinge', penalty='l2',multi_class='ovr')
-clf.fit(X_train, y_train)
-y_pred = clf.predict(X_test)
-
-print("Accuracy: {0:0.1f}%".format(accuracy_score(y_test,y_pred)*100))
 
 for f in list_images:
 	os.remove(f)
+
+pickle.dump(features, open('features.pkl', 'wb'))
+pickle.dump(labels, open('labels.pkl', 'wb'))
+print("Features and labels dumped...")
