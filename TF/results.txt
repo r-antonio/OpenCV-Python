@@ -17,6 +17,7 @@ lsa16h_mr
 bw: 93.0
 bw_contour: 85.6
 gray: 96.6
+rgb_black_background: 94.2
 
 lsa64x64
 
@@ -28,3 +29,4 @@ rgb_black_background: 95.6
 
 lsa16h_mr
 bw_contour: 77.1
+gray: 95.0
