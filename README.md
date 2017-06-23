@@ -1,9 +1,11 @@
 # OpenCV-Python
 1. [Instalaci&oacute;n](#instalacion)
     1. [Windows](#windows)
-        1. [TensorFlow](#tensorflow)
-        2. [OpenCV](#opencv)
+        1. [TensorFlow](#win-tensorflow)
+        2. [OpenCV](#win-opencv)
     2. [Linux](#linux)
+	    1. [TensorFlow](#lx-tensorflow)
+		2. [OpenCV](#lx-opencv)
 2. [Uso de los programas](#uso-de-los-programas)
     1. [Guantes](#guantes)
     2. [Buffy](#buffy)
@@ -26,7 +28,7 @@ C:> activate tensorflow
 ```
 Dentro del entorno ya se pueden instalar todas las dependencias de Python que sean necesarias para cada programa con el comando pip sin ning&uacute;n problema.
 
-#### <a name="tensorflow"></a> TensorFlow
+#### <a name="win-tensorflow"></a> TensorFlow
 Para la instalacion de TensorFlow se utilizaran los siguientes comandos:
 - Para la versi&oacute;n sin GPU:
 ```sh
@@ -38,7 +40,7 @@ Para la instalacion de TensorFlow se utilizaran los siguientes comandos:
 ```
 Recordar que para la versi&oacute;n con GPU se deben instalar antes [CUDA](https://developer.nvidia.com/cuda-downloads), [cuDNN](https://developer.nvidia.com/rdp/form/cudnn-download-survey) y los drivers correspondientes.
 
-#### <a name="opencv"></a> OpenCV
+#### <a name="win-opencv"></a> OpenCV
 Para la instalaci&oacute;n de OpenCV en Windows de 64 bits con Python 3.5 se recomienda descargarlo del [siguiente enlace](http://www.lfd.uci.edu/~gohlke/pythonlibs/vu0h7y4r/opencv_python-3.2.0+contrib-cp35-cp35m-win_amd64.whl) o buscar la versi&oacute;n correspondiente en [esta p&aacute;gina](http://www.lfd.uci.edu/~gohlke/pythonlibs/).
 Luego se instalar&aacute; con el comando pip el archivo .whl descargado:
 ```sh
@@ -46,7 +48,117 @@ Luego se instalar&aacute; con el comando pip el archivo .whl descargado:
 ```
 
 ### <a name="linux"></a> Linux
-TODO
+Para las distribuciones de Linux se utiliza la creaci&oacute;n de entornos virtuales dentro de Python para separar los proyectos que necesiten diferentes versiones del int&eacute;rprete o de las librer&iacute;as que se utilicen.  
+
+Para este caso en el que utilizamos Python 3 se realizan los siguientes pasos:
+1. Instalar pip3 y virtualenv, esto instalar&aacute; Python 3 si no se encuentra en el sistema.
+```sh
+$ sudo apt-get install python3-pip python3-dev python-virtualenv
+```
+2. Crear el entorno con virtaulenv, el flag `system-site-packages` se utiliza para tomar las librer&iacute;as que ya est&aacute;n instaladas en el sistema globalmente, ignorarlo en caso de no querer incluirlas. `ENV_DIRECTORY` es el directorio en el que se crear&aacute; el entorno.
+```sh
+$ virtualenv --system-site-packages -p python3 <ENV_DIRECTORY>
+```
+3. Activar el entorno virtualenv creado.
+```sh
+$ source <ENV_DIRECTORY>/bin/activate
+```
+4. Para salir del entorno se debe ejecutar:
+```sh
+(<ENV_NAME>)$ deactivate
+```
+
+#### <a name="lx-tensorflow"></a> TensorFlow
+Tenemos dos formas de instalar esta librer&iacute;a: desde el c&oacute;digo fuente o desde pip.
+Si se desea instalar el soporte para GPU se deber&aacute; instalar [CUDA](https://developer.nvidia.com/cuda-downloads), [cuDNN](https://developer.nvidia.com/rdp/form/cudnn-download-survey) y los drivers correspondientes antes de seguir.  
+Tambi&eacute;n es necesaria la librer&iacute;a CUDA Profile Tools Interface:
+```sh
+$ sudo apt-get install libcupti-dev
+```
+##### Pip
+Para la instalaci&oacute;n con este m&eacute;todo se debe ejecutar dentro del entorno:
+```sh
+(<ENV_NAME>)$ pip3 install --upgrade tensorflow       # Tensorflow
+(<ENV_NAME>)$ pip3 install --upgrade tensorflow-gpu   # Tensorflow y GPU
+```
+##### Desde el c&oacute;digo fuente
+Este m&eacute;todo de instalaci&oacute;n es el recomendado ya que es el que mejor resultados de performance da al correr los programas que utilicen esta libreri&iacute;a.  
+Primero hay que instalar algunas dependencias:
+- Bazel, para esto seguir las [siguientes instrucciones](https://bazel.build/versions/master/docs/install-ubuntu.html)
+- Dependencias de Python de TensorFlow (`numpy`,`wheel`) dentro del entorno.
+- (Opcional) Librer&iacute;as para el soporte de la GPU descritas anteriormente.
+
+Luego se deben realizar los siguientes pasos:
+1. Clonar el repositorio de TensorFlow y elegir la versi&oacute;n a compilar entre todos los branches.
+```sh
+$ git clone https://github.com/tensorflow/tensorflow
+$ cd tensorflow
+$ git checkout <BRANCH>   # Por ejemplo: r1.0
+```
+2. Luego se debe ejecutar el script de configuraci&oacute;n, en el cual se nos pedir&aacute; ingresar varias opciones para el uso de TensorFlow. Por ejemplo, directorio de Python, soporte para Google Cloud Platform, Hadoop, flags de optimizaci&oacute;n. Utilizar los directorios del entorno virtual (*A confirmar*).
+```sh
+$ ./configure
+```
+
+3. Luego se ejecuta el siguiente comando.
+```sh
+$ bazel build --config=opt //tensorflow/tools/pip_package:build_pip_package
+$ bazel build --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package  # GPU
+```
+> NOTE on gcc 5 or later: the binary pip packages available on the TensorFlow website are built with gcc 4, which uses the older ABI. To make your build compatible with the older ABI, you need to add --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" to your bazel build command. ABI compatibility allows custom ops built against the TensorFlow pip package to continue to work against your built package.
+
+>Tip: By default, building TensorFlow from sources consumes a lot of RAM. If RAM is an issue on your system, you may limit RAM usage by specifying --local_resources 2048,.5,1.0 while invoking bazel.
+
+4. Esto generar&aacute; un script que se debe ejecutar para crear el archivo .whl
+```sh
+$ bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg
+```
+
+5. Finalmente, dentro del entorno se instala el archivo .whl con pip.
+```sh
+(<ENV_NAME>)$ pip3 install /tmp/tensorflow_pkg/<WHL_FILE>
+```
+
+#### <a name="lx-opencv"></a> OpenCV
+Para Linux no se dispone de un archivo .whl como en Windows. La opci&oacute;n m&aacute;s recomendada es compilar OpenCV desde su c&oacute;digo fuente para la versi&oacute;n de Python de nuestro entorno virtual.
+1. Primero instalamos algunas dependencias dentro del sistema:
+```sh
+$ sudo apt-get install build-essential cmake pkg-config libjpeg8-dev libtiff5-dev libjasper-dev libpng12-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libgtk-3-dev libatlas-base-dev gfortran
+```
+
+2. Luego descargamos la &uacute;ltima versi&oacute;n del c&oacute;digo fuente de OpenCV de su repositorio oficial junto con el repositorio `opencv_contrib` para tener una instalaci&oacute;n completa de la herramienta y no s&oacute;lo las funciones b&aacute;sicas.
+```sh
+$ wget -O opencv.zip https://github.com/opencv/opencv/archive/3.2.0.zip
+$ unzip opencv.zip
+$ wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/3.2.0.zip
+$ unzip opencv_contrib.zip
+```
+
+3. Dentro del entorno instalamos `numpy` si todav&iacute;a no lo hicimos.
+```sh
+(<ENV_NAME>)$ pip3 install numpy
+```
+
+4. Luego compilamos OpenCV.
+```sh
+(<ENV_NAME>)$ cd opencv-3.2.0
+(<ENV_NAME>)$ mkdir build
+(<ENV_NAME>)$ cd build
+(<ENV_NAME>)$ cmake -D CMAKE_BUILD_TYPE=RELEASE \
+                    -D CMAKE_INSTALL_PREFIX=<ENV_DIRECTORY>/local \
+                    -D INSTALL_PYTHON_EXAMPLES=ON \
+                    -D INSTALL_C_EXAMPLES=OFF \
+                    -D OPENCV_EXTRA_MODULES_PATH=<OPENCV_CONTRIB_DIR>/modules \
+                    -D PYTHON_EXECUTABLE=<ENV_DIRECTORY>/bin/python3 \
+                    -D BUILD_EXAMPLES=ON ..
+(<ENV_NAME>)$ make -j4
+```
+
+5. Procedemos a la instalaci&oacute;n con:
+```sh
+(<ENV_NAME>)$ make install
+```
+
 
 ----
 ## <a name="uso-de-los-programas"></a> Uso de los programas
@@ -97,6 +209,8 @@ python train_nn.py -f <FEATURES_FILE> -l <LABELS_FILE>
   
 Como resultado final se obtiene un proceso de clasificaci&oacute;n de gestos que aprovecha el entrenamiento de una red conocida y ahorrando pasos intermedios.
 
+
+----
 ## <a name="resultados"></a> Resultados
 TODO
 ## <a name="referencias"></a> Referencias

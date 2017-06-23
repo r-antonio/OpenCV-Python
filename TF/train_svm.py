@@ -19,5 +19,6 @@ X_train, X_test, y_train, y_test = model_selection.train_test_split(features, la
 clf = LinearSVC(C=1.0, loss='squared_hinge', penalty='l2',multi_class='ovr')
 clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
-
+y_train_pred = clf.predict(X_train)
+print("Training accuracy: {0:0.1f}%".format(accuracy_score(y_train,y_train_pred)*100))
 print("Accuracy: {0:0.1f}%".format(accuracy_score(y_test,y_pred)*100))
