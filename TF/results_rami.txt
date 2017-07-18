@@ -1,0 +1,25 @@
+Resultados de Inception+SVM
+
+lsa32x32
+
+lsa16h_nr
+bw: 0,9138
+bw_contour: 0,8288
+gray: 0,9448
+rgb_black_background: 0,9367
+
+lsa16h_mr
+bw: 0,9193
+bw_contour: 0,8582
+gray: 0,9561
+rgb_black_background: 0,9488
+
+koller: 0,7812
+lsa_original: 0,8500
+
+Resultados de Inception+NN
+
+koller: 0,7597
+lsa_original: 0,8062
+
+

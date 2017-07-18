@@ -7,6 +7,7 @@ from tensorflow.python.platform import gfile
 import numpy as np
 import cv2
 import sklearn
+import json
 import pickle
 
 ap = argparse.ArgumentParser()
@@ -17,15 +18,6 @@ args = vars(ap.parse_args())
 model_dir = 'imagenet'
 images_dir = os.path.join(args['images_dir'],'')
 
-#Crea imagenes temporales en formato jpg por compatibilidad con inceptionV3
-def create_tmp_images():
-	png_images = [images_dir+f for f in os.listdir(images_dir) if re.search('png|PNG', f)]
-
-	for f in png_images:
-		img = cv2.imread(f)
-		out = f.split(".")[0]+".jpg"
-		cv2.imwrite(out, img)
-
 #Carga la red pre-entrenada inceptionV3
 def create_graph():
 	with gfile.FastGFile(os.path.join(model_dir, 'classify_image_graph_def.pb'), 'rb') as f:
@@ -33,19 +25,22 @@ def create_graph():
 		graph_def.ParseFromString(f.read())
 		_ = tf.import_graph_def(graph_def, name='')
 
+create_graph()
+
 #Extrae los features que calcula inception V3 hasta la capa pool3:0
 def extract_features(list_images):
 	nb_features = 2048
 	features = np.empty((len(list_images),nb_features))
 	labels = []
 
-	create_graph()
+	lbls = {}
+	i = 0
 
 	with tf.Session() as sess:
 		next_to_last_tensor = sess.graph.get_tensor_by_name('pool_3:0')
 		for ind, image in enumerate(list_images):
 			if (ind%100 == 0):
-				print('Processing %s...' % (image))
+				print('Processing image {0}/{1}...'.format(ind,len(list_images)))
 			if not gfile.Exists(image):
 				tf.logging.fatal('File does not exist %s', image)
 
@@ -54,19 +49,20 @@ def extract_features(list_images):
 			features[ind,:] = np.squeeze(predictions)
 			
 			#Se guarda el label a partir del nombre de la imagen
-			labels.append(re.split('_\d+',image.split(os.sep)[1])[0])
+			lbl = image.split('-')[1].split('.')[0]	
+			labels.append(lbl)
+			if not lbl in lbls:
+				lbls[lbl] = i
+				i += 1			
+	with open('labels.json','w') as f:
+		json.dump(lbls,f)
 
 	return features, labels
-
-create_tmp_images()
 
 #Se buscan las imagenes jpg temporales
 list_images = [images_dir+f for f in os.listdir(images_dir) if re.search('jpg|JPG', f)]
 	
 features,labels = extract_features(list_images)
-
-for f in list_images:
-	os.remove(f)
 
 #Se guardan los features extraidos y los labels en archivos
 pickle.dump(features, open('features.pkl', 'wb'))
